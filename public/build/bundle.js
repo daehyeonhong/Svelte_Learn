@@ -58,13 +58,8 @@ var app = (function () {
     function children(element) {
         return Array.from(element.childNodes);
     }
-    function set_style(node, key, value, important) {
-        if (value === null) {
-            node.style.removeProperty(key);
-        }
-        else {
-            node.style.setProperty(key, value, important ? 'important' : '');
-        }
+    function set_input_value(input, value) {
+        input.value = value == null ? '' : value;
     }
     function custom_event(type, detail, bubbles = false) {
         const e = document.createEvent('CustomEvent');
@@ -326,6 +321,10 @@ var app = (function () {
         else
             dispatch_dev('SvelteDOMSetAttribute', { node, attribute, value });
     }
+    function prop_dev(node, property, value) {
+        node[property] = value;
+        dispatch_dev('SvelteDOMSetProperty', { node, property, value });
+    }
     function set_data_dev(text, data) {
         data = '' + data;
         if (text.wholeText === data)
@@ -368,26 +367,32 @@ var app = (function () {
     	let h1;
     	let t0;
     	let t1;
+    	let input0;
     	let t2;
+    	let input1;
     	let t3;
-    	let div;
-    	let t4;
+    	let button;
     	let mounted;
     	let dispose;
 
     	const block = {
     		c: function create() {
     			h1 = element("h1");
-    			t0 = text("Hello, ");
-    			t1 = text(/*name*/ ctx[0]);
-    			t2 = text("!");
+    			t0 = text(/*text*/ ctx[0]);
+    			t1 = space();
+    			input0 = element("input");
+    			t2 = space();
+    			input1 = element("input");
     			t3 = space();
-    			div = element("div");
-    			t4 = text("Box!");
-    			add_location(h1, file, 12, 0, 186);
-    			attr_dev(div, "class", "box svelte-166fwvf");
-    			set_style(div, "background-color", /*isRed*/ ctx[1] ? 'red' : 'orange');
-    			add_location(div, file, 13, 0, 211);
+    			button = element("button");
+    			button.textContent = "Click";
+    			add_location(h1, file, 3, 0, 41);
+    			attr_dev(input0, "type", "text");
+    			input0.value = /*text*/ ctx[0];
+    			add_location(input0, file, 4, 0, 58);
+    			attr_dev(input1, "type", "text");
+    			add_location(input1, file, 7, 0, 145);
+    			add_location(button, file, 9, 0, 192);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
@@ -395,35 +400,45 @@ var app = (function () {
     		m: function mount(target, anchor) {
     			insert_dev(target, h1, anchor);
     			append_dev(h1, t0);
-    			append_dev(h1, t1);
-    			append_dev(h1, t2);
+    			insert_dev(target, t1, anchor);
+    			insert_dev(target, input0, anchor);
+    			insert_dev(target, t2, anchor);
+    			insert_dev(target, input1, anchor);
+    			set_input_value(input1, /*text*/ ctx[0]);
     			insert_dev(target, t3, anchor);
-    			insert_dev(target, div, anchor);
-    			append_dev(div, t4);
+    			insert_dev(target, button, anchor);
 
     			if (!mounted) {
     				dispose = [
-    					listen_dev(div, "click", /*click_handler*/ ctx[4], false, false, false),
-    					listen_dev(div, "mouseenter", /*enter*/ ctx[2], false, false, false),
-    					listen_dev(div, "mouseleave", /*leave*/ ctx[3], false, false, false)
+    					listen_dev(input0, "input", /*input_handler*/ ctx[1], false, false, false),
+    					listen_dev(input1, "input", /*input1_input_handler*/ ctx[2]),
+    					listen_dev(button, "click", /*click_handler*/ ctx[3], false, false, false)
     				];
 
     				mounted = true;
     			}
     		},
     		p: function update(ctx, [dirty]) {
-    			if (dirty & /*name*/ 1) set_data_dev(t1, /*name*/ ctx[0]);
+    			if (dirty & /*text*/ 1) set_data_dev(t0, /*text*/ ctx[0]);
 
-    			if (dirty & /*isRed*/ 2) {
-    				set_style(div, "background-color", /*isRed*/ ctx[1] ? 'red' : 'orange');
+    			if (dirty & /*text*/ 1 && input0.value !== /*text*/ ctx[0]) {
+    				prop_dev(input0, "value", /*text*/ ctx[0]);
+    			}
+
+    			if (dirty & /*text*/ 1 && input1.value !== /*text*/ ctx[0]) {
+    				set_input_value(input1, /*text*/ ctx[0]);
     			}
     		},
     		i: noop,
     		o: noop,
     		d: function destroy(detaching) {
     			if (detaching) detach_dev(h1);
+    			if (detaching) detach_dev(t1);
+    			if (detaching) detach_dev(input0);
+    			if (detaching) detach_dev(t2);
+    			if (detaching) detach_dev(input1);
     			if (detaching) detach_dev(t3);
-    			if (detaching) detach_dev(div);
+    			if (detaching) detach_dev(button);
     			mounted = false;
     			run_all(dispose);
     		}
@@ -443,36 +458,32 @@ var app = (function () {
     function instance($$self, $$props, $$invalidate) {
     	let { $$slots: slots = {}, $$scope } = $$props;
     	validate_slots('App', slots, []);
-    	let name = 'World';
-    	let isRed = false;
-
-    	function enter() {
-    		$$invalidate(0, name = 'enter');
-    	}
-
-    	function leave() {
-    		$$invalidate(0, name = 'leave');
-    	}
-
+    	let text = '';
     	const writable_props = [];
 
     	Object.keys($$props).forEach(key => {
     		if (!~writable_props.indexOf(key) && key.slice(0, 2) !== '$$' && key !== 'slot') console.warn(`<App> was created with unknown prop '${key}'`);
     	});
 
-    	const click_handler = () => $$invalidate(1, isRed = !isRed);
-    	$$self.$capture_state = () => ({ name, isRed, enter, leave });
+    	const input_handler = e => $$invalidate(0, text = e.target.value);
+
+    	function input1_input_handler() {
+    		text = this.value;
+    		$$invalidate(0, text);
+    	}
+
+    	const click_handler = () => $$invalidate(0, text = 'Svelte');
+    	$$self.$capture_state = () => ({ text });
 
     	$$self.$inject_state = $$props => {
-    		if ('name' in $$props) $$invalidate(0, name = $$props.name);
-    		if ('isRed' in $$props) $$invalidate(1, isRed = $$props.isRed);
+    		if ('text' in $$props) $$invalidate(0, text = $$props.text);
     	};
 
     	if ($$props && "$$inject" in $$props) {
     		$$self.$inject_state($$props.$$inject);
     	}
 
-    	return [name, isRed, enter, leave, click_handler];
+    	return [text, input_handler, input1_input_handler, click_handler];
     }
 
     class App extends SvelteComponentDev {
