@@ -1,30 +1,27 @@
 <script>
-    export let name;
+    let name = 'world';
+    let age = 85;
+    function assign() {
+        name = 'Svelte';
+        age = 31;
+    }
 </script>
 
-<main>
-    <h1>Hello {name}!</h1>
-    <p>Visit the <a href="https://svelte.dev/tutorial">Svelte tutorial</a> to learn how to build Svelte apps.</p>
-</main>
+<h1>Hello {name}!</h1>
+<h2 class={age < 85? 'active' : '' }>
+    {age}
+</h2>
+<img src="" alt={name} />
+<input type="text" bind:value={name} />
+<button on:click={assign}>
+    Assign
+</button>
 
 <style>
-    main {
-        text-align: center;
-        padding: 1em;
-        max-width: 240px;
-        margin: 0 auto;
-    }
-
     h1 {
-        color: #ff3e00;
-        text-transform: uppercase;
-        font-size: 4em;
-        font-weight: 100;
+        color: red;
     }
-
-    @media (min-width: 640px) {
-        main {
-            max-width: none;
-        }
+    .active {
+        color: blue;
     }
 </style>
