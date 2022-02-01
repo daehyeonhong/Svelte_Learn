@@ -1,17 +1,19 @@
 <script>
-    let name = 'World';
-    let fruits = ['Apple', 'Banana', 'Cherry', 'Orange', 'Mango'];
+    import {onMount} from 'svelte';
 
-    function deleteFruit() {
-        fruits = fruits.slice(1);
-    }
+    let name = 'World';
+    let isRed = false;
+    onMount(() => {
+        const box = document.querySelector('.box');
+        box.addEventListener('click', () => isRed = !isRed);
+    });
 </script>
 <h1>Hello, {name}!</h1>
-<ul>
-    {#each fruits as fruit}
-        <li>{fruit}</li>
-    {/each}
-</ul>
-<button on:click={deleteFruit}>
-    Eat it!
-</button>
+<div class="box" style="background-color: {isRed?'red':'orange'}">Box!</div>
+<style>
+    .box {
+        width: 300px;
+        height: 150px;
+        background-color: orange;
+    }
+</style>
