@@ -27,11 +27,20 @@ var app = (function () {
     function is_empty(obj) {
         return Object.keys(obj).length === 0;
     }
+    function append(target, node) {
+        target.appendChild(node);
+    }
     function insert(target, node, anchor) {
         target.insertBefore(node, anchor || null);
     }
     function detach(node) {
         node.parentNode.removeChild(node);
+    }
+    function destroy_each(iterations, detaching) {
+        for (let i = 0; i < iterations.length; i += 1) {
+            if (iterations[i])
+                iterations[i].d(detaching);
+        }
     }
     function element(name) {
         return document.createElement(name);
@@ -41,9 +50,6 @@ var app = (function () {
     }
     function space() {
         return text(' ');
-    }
-    function empty() {
-        return text('');
     }
     function listen(node, event, handler, options) {
         node.addEventListener(event, handler, options);
@@ -280,6 +286,10 @@ var app = (function () {
     function dispatch_dev(type, detail) {
         document.dispatchEvent(custom_event(type, Object.assign({ version: '3.46.3' }, detail), true));
     }
+    function append_dev(target, node) {
+        dispatch_dev('SvelteDOMInsert', { target, node });
+        append(target, node);
+    }
     function insert_dev(target, node, anchor) {
         dispatch_dev('SvelteDOMInsert', { target, node, anchor });
         insert(target, node, anchor);
@@ -300,6 +310,22 @@ var app = (function () {
             dispatch_dev('SvelteDOMRemoveEventListener', { node, event, handler, modifiers });
             dispose();
         };
+    }
+    function set_data_dev(text, data) {
+        data = '' + data;
+        if (text.wholeText === data)
+            return;
+        dispatch_dev('SvelteDOMSetData', { node: text, data });
+        text.data = data;
+    }
+    function validate_each_argument(arg) {
+        if (typeof arg !== 'string' && !(arg && typeof arg === 'object' && 'length' in arg)) {
+            let msg = '{#each} only iterates over array-like objects.';
+            if (typeof Symbol === 'function' && arg && Symbol.iterator in arg) {
+                msg += ' You can use a spread to convert this iterable into an array.';
+            }
+            throw new Error(msg);
+        }
     }
     function validate_slots(name, slot, keys) {
         for (const slot_key of Object.keys(slot)) {
@@ -332,60 +358,41 @@ var app = (function () {
 
     const file = "src\\App.svelte";
 
-    // (11:0) {:else}
-    function create_else_block(ctx) {
-    	let div;
-
-    	const block = {
-    		c: function create() {
-    			div = element("div");
-    			div.textContent = "No name!";
-    			add_location(div, file, 11, 4, 185);
-    		},
-    		m: function mount(target, anchor) {
-    			insert_dev(target, div, anchor);
-    		},
-    		p: noop,
-    		d: function destroy(detaching) {
-    			if (detaching) detach_dev(div);
-    		}
-    	};
-
-    	dispatch_dev("SvelteRegisterBlock", {
-    		block,
-    		id: create_else_block.name,
-    		type: "else",
-    		source: "(11:0) {:else}",
-    		ctx
-    	});
-
-    	return block;
+    function get_each_context(ctx, list, i) {
+    	const child_ctx = ctx.slice();
+    	child_ctx[3] = list[i];
+    	return child_ctx;
     }
 
-    // (9:0) {#if toggle}
-    function create_if_block(ctx) {
-    	let h1;
+    // (11:4) {#each fruits as fruit}
+    function create_each_block(ctx) {
+    	let li;
+    	let t_value = /*fruit*/ ctx[3] + "";
+    	let t;
 
     	const block = {
     		c: function create() {
-    			h1 = element("h1");
-    			h1.textContent = `Hello, ${/*name*/ ctx[1]}!`;
-    			add_location(h1, file, 9, 4, 149);
+    			li = element("li");
+    			t = text(t_value);
+    			add_location(li, file, 11, 8, 245);
     		},
     		m: function mount(target, anchor) {
-    			insert_dev(target, h1, anchor);
+    			insert_dev(target, li, anchor);
+    			append_dev(li, t);
     		},
-    		p: noop,
+    		p: function update(ctx, dirty) {
+    			if (dirty & /*fruits*/ 1 && t_value !== (t_value = /*fruit*/ ctx[3] + "")) set_data_dev(t, t_value);
+    		},
     		d: function destroy(detaching) {
-    			if (detaching) detach_dev(h1);
+    			if (detaching) detach_dev(li);
     		}
     	};
 
     	dispatch_dev("SvelteRegisterBlock", {
     		block,
-    		id: create_if_block.name,
-    		type: "if",
-    		source: "(9:0) {#if toggle}",
+    		id: create_each_block.name,
+    		type: "each",
+    		source: "(11:4) {#each fruits as fruit}",
     		ctx
     	});
 
@@ -393,63 +400,93 @@ var app = (function () {
     }
 
     function create_fragment(ctx) {
+    	let h1;
+    	let t3;
+    	let ul;
+    	let t4;
     	let button;
-    	let t1;
-    	let if_block_anchor;
     	let mounted;
     	let dispose;
+    	let each_value = /*fruits*/ ctx[0];
+    	validate_each_argument(each_value);
+    	let each_blocks = [];
 
-    	function select_block_type(ctx, dirty) {
-    		if (/*toggle*/ ctx[0]) return create_if_block;
-    		return create_else_block;
+    	for (let i = 0; i < each_value.length; i += 1) {
+    		each_blocks[i] = create_each_block(get_each_context(ctx, each_value, i));
     	}
-
-    	let current_block_type = select_block_type(ctx);
-    	let if_block = current_block_type(ctx);
 
     	const block = {
     		c: function create() {
+    			h1 = element("h1");
+    			h1.textContent = `Hello, ${/*name*/ ctx[1]}!`;
+    			t3 = space();
+    			ul = element("ul");
+
+    			for (let i = 0; i < each_blocks.length; i += 1) {
+    				each_blocks[i].c();
+    			}
+
+    			t4 = space();
     			button = element("button");
-    			button.textContent = "Toggle";
-    			t1 = space();
-    			if_block.c();
-    			if_block_anchor = empty();
-    			add_location(button, file, 5, 0, 68);
+    			button.textContent = "Eat it!";
+    			add_location(h1, file, 8, 0, 180);
+    			add_location(ul, file, 9, 0, 204);
+    			add_location(button, file, 14, 0, 280);
     		},
     		l: function claim(nodes) {
     			throw new Error("options.hydrate only works if the component was compiled with the `hydratable: true` option");
     		},
     		m: function mount(target, anchor) {
+    			insert_dev(target, h1, anchor);
+    			insert_dev(target, t3, anchor);
+    			insert_dev(target, ul, anchor);
+
+    			for (let i = 0; i < each_blocks.length; i += 1) {
+    				each_blocks[i].m(ul, null);
+    			}
+
+    			insert_dev(target, t4, anchor);
     			insert_dev(target, button, anchor);
-    			insert_dev(target, t1, anchor);
-    			if_block.m(target, anchor);
-    			insert_dev(target, if_block_anchor, anchor);
 
     			if (!mounted) {
-    				dispose = listen_dev(button, "click", /*click_handler*/ ctx[2], false, false, false);
+    				dispose = listen_dev(button, "click", /*deleteFruit*/ ctx[2], false, false, false);
     				mounted = true;
     			}
     		},
     		p: function update(ctx, [dirty]) {
-    			if (current_block_type === (current_block_type = select_block_type(ctx)) && if_block) {
-    				if_block.p(ctx, dirty);
-    			} else {
-    				if_block.d(1);
-    				if_block = current_block_type(ctx);
+    			if (dirty & /*fruits*/ 1) {
+    				each_value = /*fruits*/ ctx[0];
+    				validate_each_argument(each_value);
+    				let i;
 
-    				if (if_block) {
-    					if_block.c();
-    					if_block.m(if_block_anchor.parentNode, if_block_anchor);
+    				for (i = 0; i < each_value.length; i += 1) {
+    					const child_ctx = get_each_context(ctx, each_value, i);
+
+    					if (each_blocks[i]) {
+    						each_blocks[i].p(child_ctx, dirty);
+    					} else {
+    						each_blocks[i] = create_each_block(child_ctx);
+    						each_blocks[i].c();
+    						each_blocks[i].m(ul, null);
+    					}
     				}
+
+    				for (; i < each_blocks.length; i += 1) {
+    					each_blocks[i].d(1);
+    				}
+
+    				each_blocks.length = each_value.length;
     			}
     		},
     		i: noop,
     		o: noop,
     		d: function destroy(detaching) {
+    			if (detaching) detach_dev(h1);
+    			if (detaching) detach_dev(t3);
+    			if (detaching) detach_dev(ul);
+    			destroy_each(each_blocks, detaching);
+    			if (detaching) detach_dev(t4);
     			if (detaching) detach_dev(button);
-    			if (detaching) detach_dev(t1);
-    			if_block.d(detaching);
-    			if (detaching) detach_dev(if_block_anchor);
     			mounted = false;
     			dispose();
     		}
@@ -470,26 +507,30 @@ var app = (function () {
     	let { $$slots: slots = {}, $$scope } = $$props;
     	validate_slots('App', slots, []);
     	let name = 'World';
-    	let toggle = false;
+    	let fruits = ['Apple', 'Banana', 'Cherry', 'Orange', 'Mango'];
+
+    	function deleteFruit() {
+    		$$invalidate(0, fruits = fruits.slice(1));
+    	}
+
     	const writable_props = [];
 
     	Object.keys($$props).forEach(key => {
     		if (!~writable_props.indexOf(key) && key.slice(0, 2) !== '$$' && key !== 'slot') console.warn(`<App> was created with unknown prop '${key}'`);
     	});
 
-    	const click_handler = () => $$invalidate(0, toggle = !toggle);
-    	$$self.$capture_state = () => ({ name, toggle });
+    	$$self.$capture_state = () => ({ name, fruits, deleteFruit });
 
     	$$self.$inject_state = $$props => {
     		if ('name' in $$props) $$invalidate(1, name = $$props.name);
-    		if ('toggle' in $$props) $$invalidate(0, toggle = $$props.toggle);
+    		if ('fruits' in $$props) $$invalidate(0, fruits = $$props.fruits);
     	};
 
     	if ($$props && "$$inject" in $$props) {
     		$$self.$inject_state($$props.$$inject);
     	}
 
-    	return [toggle, name, click_handler];
+    	return [fruits, name, deleteFruit];
     }
 
     class App extends SvelteComponentDev {

@@ -1,13 +1,17 @@
 <script>
     let name = 'World';
-    let toggle = false;
-</script>
+    let fruits = ['Apple', 'Banana', 'Cherry', 'Orange', 'Mango'];
 
-<button on:click={() => toggle = !toggle}>
-    Toggle
+    function deleteFruit() {
+        fruits = fruits.slice(1);
+    }
+</script>
+<h1>Hello, {name}!</h1>
+<ul>
+    {#each fruits as fruit}
+        <li>{fruit}</li>
+    {/each}
+</ul>
+<button on:click={deleteFruit}>
+    Eat it!
 </button>
-{#if toggle}
-    <h1>Hello, {name}!</h1>
-{:else}
-    <div>No name!</div>
-{/if}
