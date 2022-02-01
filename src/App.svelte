@@ -1,10 +1,9 @@
 <script>
-    let text = '';
+    import Fruits from './Fruits.svelte';
+
+    let fruits = ['Apple', 'Banana', 'Cherry', 'Orange', 'Mango'];
 </script>
-<h1>{text}</h1>
-<input type="text"
-       value={text}
-       on:input={(e)=>text=e.target.value}/>
-<input type="text"
-       bind:value={text}>
-<button on:click={()=>text='Svelte'}>Click</button>
+<Fruits {fruits}/>
+<Fruits {fruits} reverse/>
+<Fruits {fruits} slice="-2"/>
+<Fruits {fruits} slice="0,3"/>
